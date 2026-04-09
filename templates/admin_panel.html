@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #475569;
+      --accent: #0ea5e9;
+      --danger: #dc2626;
+      --warn: #f59e0b;
+      --border: #dbe5f1;
+      --ok: #16a34a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "DM Sans", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 0% 0%, #e0f2fe 0%, transparent 35%),
+        radial-gradient(circle at 100% 0%, #dbeafe 0%, transparent 35%),
+        var(--bg);
+    }
+    .wrap {
+      width: min(1200px, 96%);
+      margin: 24px auto;
+    }
+    .topbar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    h1 {
+      margin: 0;
+      font-family: "Syne", sans-serif;
+      font-size: 30px;
+    }
+    .meta {
+      color: var(--muted);
+      margin-top: 4px;
+      font-size: 14px;
+    }
+    .logout {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-block;
+    }
+    .stats {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .stat .k {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .stat .v {
+      font-size: 24px;
+      font-weight: 700;
+      font-family: "Syne", sans-serif;
+    }
+    .panel {
+      margin-top: 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      overflow: auto;
+    }
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      font-family: "Syne", sans-serif;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 840px;
+    }
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+      font-size: 14px;
+    }
+    th {
+      color: #334155;
+      background: #f8fbff;
+    }
+    .tag {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid;
+    }
+    .tag.ok {
+      color: var(--ok);
+      border-color: rgba(22, 163, 74, 0.4);
+      background: rgba(22, 163, 74, 0.08);
+    }
+    .tag.warn {
+      color: #b45309;
+      border-color: rgba(245, 158, 11, 0.4);
+      background: rgba(245, 158, 11, 0.12);
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      color: #fff;
+    }
+    .btn.warn { background: var(--warn); }
+    .btn.danger { background: var(--danger); }
+    .muted { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="topbar">
+      <div>
+        <h1>Admin Panel</h1>
+        <div class="meta">Logged in as: {{ admin_id }}</div>
+      </div>
+      <a class="logout" href="/admin/logout">Logout</a>
+    </section>
+
+    <section class="stats">
+      <div class="stat"><div class="k">Total Users</div><div class="v">{{ stats.users }}</div></div>
+      <div class="stat"><div class="k">Blocked Users</div><div class="v">{{ stats.blocked_users }}</div></div>
+      <div class="stat"><div class="k">Total Jobs</div><div class="v">{{ stats.jobs }}</div></div>
+      <div class="stat"><div class="k">Applications</div><div class="v">{{ stats.applications }}</div></div>
+    </section>
+
+    <section class="panel">
+      <h2>Manage Users</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>{{ u.id }}</td>
+            <td>{{ u.name }}</td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.role }}</td>
+            <td>
+              {% if u.blocked %}
+              <span class="tag warn">Blocked</span>
+              {% else %}
+              <span class="tag ok">Active</span>
+              {% endif %}
+            </td>
+            <td class="muted">{{ u.created_at }}</td>
+            <td>
+              <div class="actions">
+                <form method="POST" action="/admin/user/{{ u.id }}/toggle_block" onsubmit="return confirm('Change block status for this user?');">
+                  <button class="btn warn" type="submit">{% if u.blocked %}Unblock{% else %}Block{% endif %}</button>
+                </form>
+                <form method="POST" action="/admin/user/{{ u.id }}/delete" onsubmit="return confirm('Delete this user and related data?');">
+                  <button class="btn danger" type="submit">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Manage Jobs</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Title</th><th>Status</th><th>HR</th><th>Created</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for j in jobs %}
+          <tr>
+            <td>{{ j.id }}</td>
+            <td>{{ j.title }}</td>
+            <td><span class="tag {% if j.status == 'open' %}ok{% else %}warn{% endif %}">{{ j.status }}</span></td>
+            <td>{{ j.hr_name }}<br><span class="muted">{{ j.hr_email }}</span></td>
+            <td class="muted">{{ j.created_at }}</td>
+            <td>
+              <form method="POST" action="/admin/job/{{ j.id }}/delete" onsubmit="return confirm('Delete this job and linked applications?');">
+                <button class="btn danger" type="submit">Delete Job</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>Manage Applications</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Candidate</th><th>Job</th><th>Status</th><th>Applied At</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in applications %}
+          <tr>
+            <td>{{ a.id }}</td>
+            <td>{{ a.candidate_name }}<br><span class="muted">{{ a.candidate_email }}</span></td>
+            <td>{{ a.job_title }}</td>
+            <td><span class="tag warn">{{ a.status }}</span></td>
+            <td class="muted">{{ a.applied_at }}</td>
+            <td>
+              <form method="POST" action="/admin/application/{{ a.id }}/delete" onsubmit="return confirm('Delete this application?');">
+                <button class="btn danger" type="submit">Delete Application</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+</body>
+</html>

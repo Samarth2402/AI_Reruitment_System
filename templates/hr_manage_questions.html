@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Manage Questions | HireAI{% endblock %}
+{% block content %}
+<div class="dashboard-layout">
+  <aside class="dash-sidebar">
+    <div class="dash-profile">
+      <div class="dash-avatar">{{ session.user.name[0]|upper }}</div>
+      <div class="dash-user-info"><strong>{{ session.user.name }}</strong><small>HR · {{ session.user.company_name or '' }}</small></div>
+    </div>
+    <a href="/dashboard"          class="dash-nav-link"><i class="fas fa-tachometer-alt"></i> Overview</a>
+    <a href="/post_job"           class="dash-nav-link"><i class="fas fa-plus-circle"></i> Post Job</a>
+    <a href="/hr_my_jobs"         class="dash-nav-link"><i class="fas fa-briefcase"></i> My Jobs</a>
+    <a href="/hr_applications"    class="dash-nav-link"><i class="fas fa-users"></i> Applications</a>
+    <a href="/hr_interviews"      class="dash-nav-link"><i class="fas fa-chart-line"></i> Interview Reports</a>
+    <a href="/hr_aptitude"        class="dash-nav-link"><i class="fas fa-brain"></i> Aptitude Results</a>
+    <a href="/hr_tech_submissions"class="dash-nav-link"><i class="fas fa-laptop-code"></i> Tech Results</a>
+    <a href="/hr_manage_questions"class="dash-nav-link active"><i class="fas fa-cog"></i> Questions</a>
+    <a href="/hr_history"         class="dash-nav-link"><i class="fas fa-clock"></i> History</a>
+    <a href="/hr_company_details" class="dash-nav-link"><i class="fas fa-building"></i> Company Details</a>
+    <hr style="border-color:var(--border);margin:10px 0;">
+    <a href="/logout" class="dash-nav-link text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </aside>
+  <div class="dash-main">
+    <div class="dash-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div><h1>Manage Questions</h1><p>Add and manage aptitude, MCQ, and coding questions</p></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a href="/hr_add_aptitude_question" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Aptitude Q</a>
+        <a href="/hr_add_tech_mcq"          class="btn btn-success btn-sm"><i class="fas fa-plus"></i> Tech MCQ</a>
+        <a href="/hr_add_coding_question"   class="btn btn-warning btn-sm"><i class="fas fa-plus"></i> Coding Q</a>
+        <button onclick="refreshAI('all','all')" class="btn btn-sm" style="background:var(--accent2);color:#fff;border:none;">
+          <i class="fas fa-sync-alt"></i> Refresh AI Questions
+        </button>
+      </div>
+    </div>
+
+    {% for section, qs_by_level in [("Aptitude", aptitude), ("Tech MCQ", tech_mcq), ("Tech Coding", tech_coding)] %}
+    <div class="dash-section">
+      <div class="dash-section-header">
+        <h2>
+          <i class="fas {% if section=='Aptitude' %}fa-brain{% elif section=='Tech MCQ' %}fa-list-ul{% else %}fa-code{% endif %}" style="color:var(--accent2);"></i>
+          {{ section }} Questions
+        </h2>
+      </div>
+      {% for level in ["easy", "medium", "hard"] %}
+      <details style="margin-bottom:10px;">
+        <summary style="cursor:pointer;padding:10px 14px;background:var(--bg3);border-radius:var(--radius);font-weight:700;font-size:14px;color:var(--text2);list-style:none;display:flex;align-items:center;justify-content:space-between;">
+          <span>
+            <i class="fas fa-chevron-right" style="font-size:11px;margin-right:8px;"></i>
+            {{ level|capitalize }}
+          </span>
+          <span class="badge badge-type">{{ qs_by_level[level]|length }} questions</span>
+        </summary>
+        <div style="margin-top:8px;padding:4px 0;">
+        {% for q in qs_by_level[level] %}
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;font-size:13px;background:var(--bg3);">
+          <span style="color:var(--text2);flex:1;">{{ loop.index }}. {{ q.question }}</span>
+          <div>
+            {% if q.id|string|length <= 2 or (q.id|string).isdigit() %}
+            <form method="POST" action="/hr_hide_default_question" style="display:inline;">
+              <input type="hidden" name="question_type" value="{{ section|lower|replace(' ','_') }}"/>
+              <input type="hidden" name="level" value="{{ level }}"/>
+              <input type="hidden" name="question_id" value="{{ q.id }}"/>
+              <button class="btn btn-ghost btn-xs" type="submit"><i class="fas fa-eye-slash"></i></button>
+            </form>
+            {% else %}
+            <form method="POST" action="/hr_delete_question" style="display:inline;" onsubmit="return confirm('Delete this question?');">
+              <input type="hidden" name="question_id" value="{{ q.id }}"/>
+              <button class="btn btn-danger btn-xs" type="submit"><i class="fas fa-trash"></i></button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <p style="color:var(--text3);font-size:13px;padding:10px 14px;font-style:italic;">No {{ level }} questions yet.</p>
+        {% endfor %}
+        </div>
+      </details>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Refresh AI toast -->
+<div id="ai-toast" style="display:none;position:fixed;bottom:28px;right:28px;background:var(--accent);color:#fff;padding:14px 22px;border-radius:12px;font-size:14px;font-weight:500;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.25);">
+  <i class="fas fa-sync-alt fa-spin"></i> <span id="ai-toast-msg">Refreshing AI questions…</span>
+</div>
+
+<script>
+function refreshAI(category, level) {
+  const toast = document.getElementById('ai-toast');
+  const msg   = document.getElementById('ai-toast-msg');
+  toast.style.display = 'block';
+  msg.textContent = 'Refreshing AI questions…';
+
+  const fd = new FormData();
+  fd.append('category', category);
+  fd.append('level', level);
+
+  fetch('/hr_refresh_ai_questions', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(data => {
+      msg.innerHTML = '<i class="fas fa-check"></i> ' + data.message;
+      document.querySelector('#ai-toast i').className = 'fas fa-check';
+      setTimeout(() => { toast.style.display = 'none'; }, 4000);
+    })
+    .catch(() => {
+      msg.textContent = 'Refresh failed. Check console.';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    });
+}
+</script>
+{% endblock %}

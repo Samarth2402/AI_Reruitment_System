@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Aptitude Result{% endblock %}
+{% block content %}
+<div class="inner-page" style="max-width:600px;">
+  <div class="content-card" style="text-align:center;">
+    <h1 style="font-family:'Syne',sans-serif;font-size:22px;margin-bottom:4px;"><i class="fas fa-brain" style="color:var(--accent2);"></i> Aptitude Test Result</h1>
+    <p style="color:var(--text3);margin-bottom:24px;">{{ result.level|capitalize }} Level</p>
+
+    <div class="score-circle" style="margin:0 auto 16px;width:120px;height:120px;{% if result.percentage >= 70 %}border-color:var(--accent3);{% elif result.percentage >= 50 %}border-color:var(--warning);{% else %}border-color:var(--danger);{% endif %}">
+      <strong style="font-size:32px;{% if result.percentage >= 70 %}color:var(--accent3);{% elif result.percentage >= 50 %}color:var(--warning);{% else %}color:var(--danger);{% endif %}">{{ result.score }}</strong>
+      <small style="font-size:12px;color:var(--text3);">/ {{ result.total }}</small>
+    </div>
+
+    <p style="font-family:'Syne',sans-serif;font-size:36px;font-weight:800;margin-bottom:8px;">{{ result.percentage }}%</p>
+
+    <div class="progress-bar" style="margin:0 auto 24px;max-width:300px;">
+      <div class="progress-fill {% if result.percentage >= 70 %}green{% elif result.percentage >= 50 %}yellow{% else %}red{% endif %}" style="width:{{ result.percentage }}%;"></div>
+    </div>
+
+    {% if result.decision in ["auto_tech","tech","tech_approved"] %}
+      <div class="alert alert-success"><i class="fas fa-trophy"></i> Congratulations! You qualify for the Tech Round.</div>
+    {% else %}
+      <div class="alert alert-info"><i class="fas fa-clock"></i> Your result is under HR review. Check your dashboard for updates.</div>
+    {% endif %}
+
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap;">
+      <a href="/dashboard" class="btn btn-primary btn-lg"><i class="fas fa-tachometer-alt"></i> Back to Dashboard</a>
+      <a href="/aptitude_history" class="btn btn-ghost"><i class="fas fa-history"></i> View History</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

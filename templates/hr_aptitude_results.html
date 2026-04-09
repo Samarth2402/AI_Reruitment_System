@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}All Aptitude Results{% endblock %}
+{% block content %}
+<div class="dashboard-layout">
+  <aside class="dash-sidebar">
+    <div class="dash-profile"><div class="dash-avatar">{{ session.user.name[0]|upper }}</div><div class="dash-user-info"><strong>{{ session.user.name }}</strong><small>HR</small></div></div>
+    <a href="/dashboard"       class="dash-nav-link"><i class="fas fa-tachometer-alt"></i> Overview</a>
+    <a href="/hr_aptitude"     class="dash-nav-link active"><i class="fas fa-brain"></i> Aptitude Results</a>
+    <a href="/hr_my_jobs"      class="dash-nav-link"><i class="fas fa-briefcase"></i> My Jobs</a>
+    <a href="/logout" class="dash-nav-link text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </aside>
+  <div class="dash-main">
+    <div class="dash-header"><h1>All Aptitude Results</h1></div>
+    {% if history %}
+    <div class="dash-section">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Candidate</th><th>Email</th><th>Level</th><th>Score</th><th>%</th><th>Decision</th><th>Date</th></tr></thead>
+          <tbody>
+          {% for r in history %}
+          <tr>
+            <td><strong>{{ r.name }}</strong></td>
+            <td style="color:var(--text3);">{{ r.email }}</td>
+            <td><span class="badge badge-type">{{ r.level|capitalize }}</span></td>
+            <td style="font-weight:700;">{{ r.score }}/{{ r.total }}</td>
+            <td><div style="display:flex;align-items:center;gap:8px;"><div class="progress-bar" style="width:60px;"><div class="progress-fill {% if r.percentage >= 70 %}green{% elif r.percentage >= 50 %}yellow{% else %}red{% endif %}" style="width:{{ r.percentage }}%;"></div></div>{{ r.percentage }}%</div></td>
+            <td><span class="status-badge {% if 'tech' in r.decision %}status-hr_scheduled{% elif 'rejected' in r.decision %}status-rejected{% else %}status-applied{% endif %}">{{ r.decision|replace('_',' ')|capitalize }}</span></td>
+            <td style="color:var(--text3);font-size:13px;">{{ r.taken_at }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% else %}
+    <div class="empty-state"><i class="fas fa-brain"></i><h3>No results yet</h3></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Interview History{% endblock %}
+{% block content %}
+<div class="dashboard-layout">
+  <aside class="dash-sidebar">
+    <div class="dash-profile">
+      <div class="dash-avatar">{{ session.user.name[0]|upper }}</div>
+      <div class="dash-user-info"><strong>{{ session.user.name }}</strong><small>Candidate</small></div>
+    </div>
+    <a href="/dashboard"       class="dash-nav-link"><i class="fas fa-tachometer-alt"></i> Overview</a>
+    <a href="/jobs"            class="dash-nav-link"><i class="fas fa-search"></i> Browse Jobs</a>
+    <a href="/upload_resume"   class="dash-nav-link"><i class="fas fa-file-upload"></i> Upload Resume</a>
+    <a href="/start_interview" class="dash-nav-link"><i class="fas fa-microphone"></i> Mock Interview</a>
+    <a href="/my_interviews"   class="dash-nav-link active"><i class="fas fa-chart-bar"></i> Interview History</a>
+    <a href="/applied_jobs"    class="dash-nav-link"><i class="fas fa-paper-plane"></i> Applications</a>
+    <hr style="border-color:var(--border);margin:10px 0;">
+    <a href="/logout" class="dash-nav-link text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </aside>
+  <div class="dash-main">
+    <div class="dash-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div><h1>Interview History</h1><p>Your mock interview results and HR schedules</p></div>
+      <a href="/start_interview" class="btn btn-primary"><i class="fas fa-microphone"></i> New Mock Interview</a>
+    </div>
+
+    {% if schedule %}
+    <div class="alert alert-success"><i class="fas fa-calendar-check"></i> <strong>HR Interview Scheduled:</strong> {{ schedule.job_title }} on {{ schedule.date }} at {{ schedule.time }}</div>
+    {% endif %}
+
+    {% if interviews %}
+    <div style="display:flex;flex-direction:column;gap:14px;">
+    {% for i in interviews %}
+    <div class="dash-section">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+        <div>
+          <p style="font-weight:700;font-size:15px;">Mock Interview — {{ i.taken_at }}</p>
+          <p style="color:var(--text3);font-size:13px;margin-top:2px;">{{ i.readiness }}</p>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;{% if i.score >= 70 %}color:var(--accent3);{% elif i.score >= 50 %}color:var(--warning);{% else %}color:var(--danger);{% endif %}">{{ i.score }}%</div>
+          <div class="progress-bar" style="width:80px;margin-top:4px;"><div class="progress-fill {% if i.score >= 70 %}green{% elif i.score >= 50 %}yellow{% else %}red{% endif %}" style="width:{{ i.score }}%;"></div></div>
+        </div>
+      </div>
+      {% if i.weak_areas %}
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;">
+        {% for a in i.weak_areas %}<span class="chip" style="background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.2);color:var(--danger);">{{ a }}</span>{% endfor %}
+      </div>
+      {% endif %}
+      <div style="margin-top:10px;">
+        <span style="font-size:13px;color:var(--text3);">HR Decision: </span>
+        <span class="status-badge {% if i.hr_decision == 'selected' %}status-hr_scheduled{% elif i.hr_decision == 'rejected' %}status-rejected{% else %}status-applied{% endif %}">{{ i.hr_decision|capitalize }}</span>
+      </div>
+    </div>
+    {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-microphone"></i>
+      <h3>No interviews taken yet</h3>
+      <p>Practice with AI mock interviews to improve your performance</p>
+      <a href="/start_interview" class="btn btn-primary mt-2"><i class="fas fa-microphone"></i> Start Mock Interview</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Resume Analysis{% endblock %}
+{% block content %}
+<div class="inner-page" style="max-width:960px;">
+  <a href="/resume_history" class="back-link"><i class="fas fa-arrow-left"></i> Resume History</a>
+
+  <div class="page-header">
+    <div><h1>AI Resume Analysis</h1><p>Here's what our AI found in your resume</p></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <form method="POST" action="/reanalyze_resume" style="margin:0;">
+        <button type="submit" class="btn btn-outline"><i class="fas fa-rotate"></i> Re-analyze</button>
+      </form>
+      <a href="/jobs" class="btn btn-primary"><i class="fas fa-search"></i> Browse Jobs</a>
+    </div>
+  </div>
+
+  <!-- Score Card -->
+  <div class="content-card mb-3" style="background:linear-gradient(135deg,#1a1040,#0d1a2e);border-color:rgba(108,99,255,0.3);">
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;">
+      <div class="score-circle" style="{% if analysis.score >= 70 %}border-color:var(--accent3){% elif analysis.score >= 50 %}border-color:var(--warning){% else %}border-color:var(--danger){% endif %};flex-shrink:0;">
+        <strong style="{% if analysis.score >= 70 %}color:var(--accent3){% elif analysis.score >= 50 %}color:var(--warning){% else %}color:var(--danger){% endif %};">{{ analysis.score }}</strong>
+        <small>/100</small>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <span class="badge {% if analysis.quality == 'good' or analysis.quality == 'excellent' %}badge-open{% elif analysis.quality == 'medium' %}badge-pending{% else %}badge-rejected{% endif %}" style="font-size:13px;padding:5px 14px;">
+            {{ analysis.quality|capitalize }}
+          </span>
+          <span style="color:var(--text2);font-size:14px;">Resume Quality</span>
+        </div>
+        <div class="progress-bar" style="width:300px;max-width:100%;height:8px;">
+          <div class="progress-fill {% if analysis.score >= 70 %}green{% elif analysis.score >= 50 %}yellow{% else %}red{% endif %}" style="width:{{ analysis.score }}%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+    <!-- Feedback -->
+    <div class="content-card">
+      <h2><i class="fas fa-chart-bar"></i> Detailed Feedback</h2>
+      {% if analysis.feedback is mapping %}
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          {% for key, value in analysis.feedback.items() %}
+          <div style="padding:12px;background:var(--bg3);border-left:3px solid var(--accent);border-radius:0 var(--radius) var(--radius) 0;">
+            <strong style="font-size:12px;text-transform:capitalize;color:var(--text2);">{{ key.replace('_',' ') }}</strong>
+            <p style="margin-top:4px;font-size:13px;color:var(--text2);">{{ value }}</p>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p style="color:var(--text2);font-size:14px;line-height:1.7;">{{ analysis.feedback }}</p>
+      {% endif %}
+    </div>
+
+    <!-- Suggestions -->
+    {% if analysis.suggestions %}
+    <div class="content-card">
+      <h2><i class="fas fa-lightbulb"></i> Improvement Tips</h2>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        {% for s in analysis.suggestions %}
+        <div style="display:flex;align-items:flex-start;gap:10px;padding:10px;background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.15);border-radius:var(--radius);">
+          <i class="fas fa-check-circle" style="color:var(--accent3);margin-top:2px;flex-shrink:0;"></i>
+          <p style="margin:0;font-size:13px;color:var(--text2);">{{ s }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Edit Resume Text -->
+  <div class="content-card mb-3">
+    <h2><i class="fas fa-edit"></i> Edit Resume Text</h2>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:14px;">Edit the extracted text, then download as PDF or re-upload as a new resume version.</p>
+    <textarea id="resumeText" class="code-area" style="height:360px;background:var(--bg2);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;">Loading resume text…</textarea>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;">
+      <button class="btn btn-ghost btn-sm"    onclick="loadResumeText()"><i class="fas fa-sync"></i> Reload</button>
+      <button class="btn btn-outline btn-sm"  onclick="previewPDF()"><i class="fas fa-eye"></i> Preview PDF</button>
+      <button class="btn btn-primary btn-sm"  onclick="downloadPDF()"><i class="fas fa-file-pdf"></i> Download PDF</button>
+      <button class="btn btn-ghost btn-sm"    onclick="copyToClipboard()"><i class="fas fa-clipboard"></i> Copy</button>
+      <button class="btn btn-success btn-sm"  onclick="uploadEditedResume()"><i class="fas fa-upload"></i> Upload as New</button>
+    </div>
+    <form id="pdfForm"     method="POST" action="/resume_analysis_download" style="display:none;"><input type="hidden" name="resume_text" id="pdfTextField"/></form>
+    <form id="previewForm" method="POST" action="/resume_analysis_download" target="_blank" style="display:none;"><input type="hidden" name="resume_text" id="previewTextField"/><input type="hidden" name="preview" value="1"/></form>
+    <form id="uploadForm"  method="POST" action="/upload_edited_resume" style="display:none;"><input type="hidden" name="resume_text" id="uploadTextField"/></form>
+  </div>
+
+  <!-- Next Steps -->
+  <div class="content-card" style="text-align:center;">
+    <h2 style="justify-content:center;margin-bottom:8px;"><i class="fas fa-rocket"></i> Next Steps</h2>
+    {% if analysis.quality in ['good','excellent'] %}
+    <p style="color:var(--accent3);margin-bottom:16px;"><i class="fas fa-check-circle"></i> Your resume looks great! You're ready to apply for jobs.</p>
+    <a href="/jobs" class="btn btn-primary btn-lg"><i class="fas fa-search"></i> Browse Jobs</a>
+    {% else %}
+    <p style="color:var(--warning);margin-bottom:16px;"><i class="fas fa-exclamation-triangle"></i> Consider improving your resume using the tips above before applying.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <a href="/upload_resume" class="btn btn-primary"><i class="fas fa-upload"></i> Re-upload Resume</a>
+      <a href="/jobs" class="btn btn-outline"><i class="fas fa-search"></i> Browse Jobs Anyway</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+async function loadResumeText(){
+  const ta = document.getElementById('resumeText');
+  ta.value = 'Loading…';
+  try{
+    const r = await fetch('/resume_text/{{ resume.resume_id }}');
+    const d = await r.json();
+    ta.value = d.text || ('Error: '+(d.error||'Unknown'));
+  }catch(e){ ta.value = 'Error: '+e; }
+}
+function downloadPDF(){ const t=document.getElementById('resumeText').value; if(!t||t==='Loading…'){alert('Wait for text to load');return;} document.getElementById('pdfTextField').value=t; document.getElementById('pdfForm').submit(); }
+function previewPDF(){ const t=document.getElementById('resumeText').value; if(!t||t==='Loading…'){alert('Wait for text to load');return;} document.getElementById('previewTextField').value=t; document.getElementById('previewForm').submit(); }
+function uploadEditedResume(){ const t=document.getElementById('resumeText').value; if(!t||t==='Loading…'){alert('Wait for text to load');return;} if(!confirm('Upload edited text as a new resume? This will re-analyze it.')){return;} document.getElementById('uploadTextField').value=t; document.getElementById('uploadForm').submit(); }
+function copyToClipboard(){ const t=document.getElementById('resumeText').value; navigator.clipboard.writeText(t).then(()=>alert('Copied!'),e=>alert('Failed: '+e)); }
+window.addEventListener('load', loadResumeText);
+</script>
+{% endblock %}
