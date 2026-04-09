@@ -478,7 +478,7 @@ def auto_send_job_end_reminders():
         JOIN users u ON u.id = j.hr_id
         WHERE j.status='open'
           AND j.deadline IS NOT NULL
-          AND j.deadline = DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+          AND j.deadline = CURRENT_DATE + INTERVAL '1 day'
           AND j.reminder_sent_at IS NULL
         ORDER BY j.deadline ASC, j.created_at ASC
         """
