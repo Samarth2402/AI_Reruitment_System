@@ -1,9 +1,0 @@
-Flask
-pymysql
-cryptography
-gunicorn
-PyPDF2
-python-dotenv
-groq
-fpdf2
-APScheduler
