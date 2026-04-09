@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Add Tech MCQ{% endblock %}
+{% block content %}
+<div class="dashboard-layout">
+  <aside class="dash-sidebar">
+    <div class="dash-profile"><div class="dash-avatar">{{ session.user.name[0]|upper }}</div><div class="dash-user-info"><strong>{{ session.user.name }}</strong><small>HR</small></div></div>
+    <a href="/dashboard"          class="dash-nav-link"><i class="fas fa-tachometer-alt"></i> Overview</a>
+    <a href="/hr_manage_questions"class="dash-nav-link active"><i class="fas fa-cog"></i> Questions</a>
+    <a href="/hr_my_jobs"         class="dash-nav-link"><i class="fas fa-briefcase"></i> My Jobs</a>
+    <a href="/logout" class="dash-nav-link text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </aside>
+  <div class="dash-main">
+    <div class="dash-header"><h1>Add Tech MCQ</h1></div>
+    <div class="dash-section" style="max-width:600px;">
+      <form method="POST">
+        <div class="form-group"><label>Difficulty Level</label><select name="level"><option value="easy">Easy</option><option value="medium">Medium</option><option value="hard">Hard</option></select></div>
+        <div class="form-group"><label>Question</label><textarea name="question" rows="3" placeholder="Enter technical question…" required></textarea></div>
+        <div class="form-group"><label>Options <small style="color:var(--text3);">(comma-separated)</small></label><input type="text" name="options" placeholder="Option A, Option B, Option C, Option D" required/></div>
+        <div class="form-group"><label>Correct Answer</label><input type="text" name="answer" placeholder="Exact text of the correct option" required/></div>
+        <div class="form-actions">
+          <a href="/hr_manage_questions" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+          <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Add MCQ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

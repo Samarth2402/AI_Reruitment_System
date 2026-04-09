@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="dashboard-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="dash-sidebar">
+    <div class="dash-profile">
+      <div class="dash-avatar">{{ user.name[0]|upper }}</div>
+      <div class="dash-user-info">
+        <strong>{{ user.name }}</strong>
+        <small>{{ user.role|capitalize }}{% if user.role == 'hr' and user.company_name %} · {{ user.company_name }}{% endif %}</small>
+      </div>
+    </div>
+
+    <a href="/dashboard" class="dash-nav-link active"><i class="fas fa-tachometer-alt"></i> Overview</a>
+    <a href="/edit_profile" class="dash-nav-link"><i class="fas fa-user-edit"></i> Edit Profile</a>
+
+    {% if user.role == 'candidate' %}
+      <span class="dash-nav-section">Jobs</span>
+      <a href="/jobs" class="dash-nav-link"><i class="fas fa-search"></i> Browse Jobs</a>
+      <a href="/applied_jobs" class="dash-nav-link"><i class="fas fa-paper-plane"></i> My Applications</a>
+
+      <span class="dash-nav-section">AI Tools</span>
+      <a href="/upload_resume" class="dash-nav-link"><i class="fas fa-file-upload"></i> Upload Resume</a>
+      <a href="/resume_history" class="dash-nav-link"><i class="fas fa-history"></i> Resume History</a>
+      <a href="/start_interview" class="dash-nav-link"><i class="fas fa-microphone"></i> Mock Interview</a>
+      <a href="/my_interviews" class="dash-nav-link"><i class="fas fa-chart-bar"></i> Interview History</a>
+      <a href="/aptitude_history" class="dash-nav-link"><i class="fas fa-scroll"></i> Aptitude History</a>
+
+    {% else %}
+      <span class="dash-nav-section">Recruitment</span>
+      <a href="/post_job" class="dash-nav-link"><i class="fas fa-plus-circle"></i> Post New Job</a>
+      <a href="/hr_my_jobs" class="dash-nav-link"><i class="fas fa-briefcase"></i> My Jobs</a>
+      <a href="/hr_applications" class="dash-nav-link"><i class="fas fa-users"></i> Applications</a>
+      <a href="/hr_interviews" class="dash-nav-link"><i class="fas fa-chart-line"></i> Interview Reports</a>
+
+      <span class="dash-nav-section">Assessments</span>
+      <a href="/hr_aptitude" class="dash-nav-link"><i class="fas fa-brain"></i> Aptitude Results</a>
+      <a href="/hr_tech_submissions" class="dash-nav-link"><i class="fas fa-laptop-code"></i> Tech Results</a>
+      <a href="/hr_manage_questions" class="dash-nav-link"><i class="fas fa-cog"></i> Questions</a>
+      <a href="/hr_history" class="dash-nav-link"><i class="fas fa-clock"></i> History</a>
+
+      <span class="dash-nav-section">Company</span>
+      <a href="/hr_company_details" class="dash-nav-link"><i class="fas fa-building"></i> Company Details</a>
+    {% endif %}
+
+    <hr style="border-color:var(--border);margin:10px 0;">
+    <a href="/logout" class="dash-nav-link text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="dash-main">
+    <div class="dash-header">
+      <h1>Welcome back, {{ user.name.split(' ')[0] }}! 👋</h1>
+      <p>{{ user.role|capitalize }} Dashboard{% if user.role == 'hr' and user.company_name %} · <strong>{{ user.company_name }}</strong>{% endif %}</p>
+    </div>
+
+    <!-- STATS -->
+    {% if user.role == 'candidate' %}
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-paper-plane"></i></div>
+        <div class="stat-info"><strong>{{ applied_jobs|length }}</strong><span>Applications</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-hourglass-half"></i></div>
+        <div class="stat-info"><strong>{{ applied_jobs|selectattr('status','equalto','applied')|list|length }}</strong><span>Under Review</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-info"><strong>{{ applied_jobs|selectattr('status','equalto','hr_scheduled')|list|length }}</strong><span>Shortlisted</span></div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- QUICK ACCESS -->
+    <div class="dash-section">
+      <div class="dash-section-header"><h2>⚡ Quick Access</h2></div>
+      <div class="quick-grid">
+        {% if user.role == 'candidate' %}
+          <a href="/upload_resume"   class="quick-card"><span class="q-icon">📄</span>Upload Resume</a>
+          <a href="/resume_history"  class="quick-card"><span class="q-icon">📂</span>Resume History</a>
+          <a href="/jobs"            class="quick-card"><span class="q-icon">💼</span>Browse Jobs</a>
+          <a href="/start_interview" class="quick-card"><span class="q-icon">🎤</span>Mock Interview</a>
+          <a href="/my_interviews"   class="quick-card"><span class="q-icon">📊</span>Interview History</a>
+          <a href="/aptitude_history"class="quick-card"><span class="q-icon">📜</span>Aptitude History</a>
+        {% else %}
+          <a href="/post_job"            class="quick-card"><span class="q-icon">➕</span>Post Job</a>
+          <a href="/hr_company_details"  class="quick-card"><span class="q-icon">🏢</span>Company Details</a>
+          <a href="/hr_my_jobs"          class="quick-card"><span class="q-icon">📋</span>My Jobs</a>
+          <a href="/hr_applications"     class="quick-card"><span class="q-icon">👥</span>Applications</a>
+          <a href="/hr_interviews"       class="quick-card"><span class="q-icon">📊</span>Interview Reports</a>
+          <a href="/hr_aptitude"         class="quick-card"><span class="q-icon">🧠</span>Aptitude Results</a>
+          <a href="/hr_tech_submissions" class="quick-card"><span class="q-icon">💻</span>Tech Results</a>
+          <a href="/hr_manage_questions" class="quick-card"><span class="q-icon">⚙️</span>Questions</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- CANDIDATE: APPLICATIONS -->
+    {% if user.role == 'candidate' and applied_jobs %}
+    <div class="dash-section">
+      <div class="dash-section-header">
+        <h2>📄 Your Applications</h2>
+        <a href="/jobs" class="btn btn-outline btn-sm"><i class="fas fa-search"></i> Browse More</a>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Job Title</th>
+              <th>Experience</th>
+              <th>Academics</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for job in applied_jobs %}
+            <tr>
+              <td><strong>{{ job.job_title }}</strong></td>
+              <td>{{ job.experience }} yrs</td>
+              <td>
+                <span class="text-muted">10th:</span> {{ job.tenth }}%<br>
+                <span class="text-muted">12th:</span> {{ job.twelfth }}%<br>
+                <span class="text-muted">Grad:</span> {{ job.graduation }}%
+              </td>
+              <td>
+                <span class="status-badge status-{{ job.status }}">{{ job.status|replace('_',' ')|capitalize }}</span>
+              </td>
+              <td>
+                {% if job.status == "rejected" %}
+                  <span class="text-danger bold"><i class="fas fa-times-circle"></i> Rejected</span>
+                {% elif job.status == "hr_scheduled" %}
+                  <span class="text-success bold"><i class="fas fa-calendar-check"></i> HR Scheduled</span><br>
+                  {% if job.hr_date %}<span class="text-muted" style="font-size:12px;">{{ job.hr_date }} at {{ job.hr_time }}</span>{% endif %}
+                {% elif job.aptitude_allowed %}
+                  <a href="/aptitude_test" class="btn btn-warning btn-sm"><i class="fas fa-brain"></i> Take Aptitude</a>
+                {% elif job.tech_allowed %}
+                  <a href="/tech_round/{{ job.id }}" class="btn btn-success btn-sm"><i class="fas fa-laptop-code"></i> Start Tech Round</a>
+                {% elif job.waiting_hr %}
+                  <span class="text-warning bold"><i class="fas fa-hourglass-half"></i> Awaiting HR</span>
+                {% elif job.status == "applied" %}
+                  <span class="text-muted"><i class="fas fa-clock"></i> Under Review</span>
+                {% else %}
+                  <span class="status-badge status-{{ job.status }}">{{ job.status|replace('_',' ')|capitalize }}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% elif user.role == 'candidate' %}
+    <div class="empty-state">
+      <i class="fas fa-briefcase"></i>
+      <h3>No applications yet</h3>
+      <p>Browse jobs and apply to get started on your career journey</p>
+      <a href="/jobs" class="btn btn-primary mt-2"><i class="fas fa-search"></i> Browse Jobs</a>
+    </div>
+    {% endif %}
+
+  </div><!-- /dash-main -->
+</div><!-- /dashboard-layout -->
+{% endblock %}

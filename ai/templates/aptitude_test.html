@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Aptitude Test{% endblock %}
+{% block content %}
+
+<!-- Proctoring Overlay -->
+<div id="procOverlay" style="position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;">
+  <div class="content-card" style="max-width:480px;text-align:center;">
+    <div style="font-size:52px;margin-bottom:16px;">🔒</div>
+    <h2 style="margin-bottom:8px;">Proctored Aptitude Test</h2>
+    <p style="color:var(--text2);margin-bottom:20px;font-size:14px;">This test is monitored. Please read before starting:</p>
+    <ul style="text-align:left;font-size:13px;line-height:2.2;margin-bottom:20px;color:var(--text2);list-style:none;padding:0;">
+      <li><i class="fas fa-camera" style="color:var(--accent2);width:20px;"></i> Camera access is <strong>required</strong></li>
+      <li><i class="fas fa-desktop" style="color:var(--accent2);width:20px;"></i> Test runs in <strong>fullscreen</strong></li>
+      <li><i class="fas fa-ban" style="color:var(--danger);width:20px;"></i> Copy / paste is <strong>disabled</strong></li>
+      <li><i class="fas fa-keyboard" style="color:var(--danger);width:20px;"></i> Restricted keys are <strong>blocked</strong></li>
+      <li><i class="fas fa-eye" style="color:var(--warning);width:20px;"></i> Tab switching is <strong>logged</strong></li>
+      <li><i class="fas fa-exclamation-triangle" style="color:var(--warning);width:20px;"></i> Violations are reported to HR</li>
+    </ul>
+    <div id="camPreview" style="margin-bottom:16px;display:none;">
+      <video id="camFeed" autoplay muted playsinline style="width:100%;border-radius:var(--radius);max-height:160px;object-fit:cover;border:2px solid var(--accent3);"></video>
+      <p style="font-size:12px;color:var(--accent3);margin-top:6px;"><i class="fas fa-check-circle"></i> Camera ready</p>
+    </div>
+    <div id="camError" style="display:none;" class="alert alert-warning mt-2"></div>
+    <button id="startBtn" class="btn btn-primary w-full btn-lg" onclick="startTest()" disabled>
+      <i class="fas fa-camera"></i> Allow Camera & Start
+    </button>
+  </div>
+</div>
+
+<!-- Violation Toast -->
+<div id="violationToast" style="position:fixed;top:16px;right:16px;background:var(--danger);color:#fff;padding:12px 20px;border-radius:var(--radius);font-size:13px;font-weight:600;z-index:10000;display:none;max-width:300px;box-shadow:var(--shadow-lg);">⚠️ Violation logged!</div>
+
+<!-- Status Bar -->
+<div id="statusBar" style="position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:5000;background:var(--card2);border:1px solid var(--border2);border-radius:24px;padding:6px 20px;font-size:13px;display:flex;gap:16px;align-items:center;box-shadow:var(--shadow);">
+  <span><i class="fas fa-brain" style="color:var(--accent2);"></i> Aptitude — <strong>{{ level|capitalize }}</strong></span>
+  <span style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> Violations: <strong id="vCount">0</strong></span>
+  <span id="fsIndicator" style="color:var(--accent3);"><i class="fas fa-desktop"></i> Fullscreen</span>
+</div>
+
+<canvas id="snapCanvas" style="display:none;" width="320" height="240"></canvas>
+
+<div style="max-width:720px;margin:80px auto 40px;padding:0 16px;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+    <h1 style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;"><i class="fas fa-brain" style="color:var(--accent2);"></i> Aptitude Test</h1>
+    <span class="badge badge-type">{{ level|capitalize }}</span>
+  </div>
+  <div class="alert alert-info mb-3"><i class="fas fa-info-circle"></i> Answer all {{ questions|length }} questions. Each correct answer = 1 mark. <strong>Do not switch tabs or exit fullscreen.</strong></div>
+
+  <form method="POST" action="/submit_aptitude" id="aptForm">
+    <input type="hidden" name="job_id" value="{{ job_id }}"/>
+    {% for q in questions %}
+    <div class="content-card" style="margin-bottom:12px;">
+      <p style="font-weight:700;margin-bottom:14px;color:var(--text);font-size:15px;">Q{{ loop.index }}. {{ q.question }}</p>
+      {% for opt in q.options %}
+      <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:var(--transition);" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        <input type="radio" name="{{ q.id }}" value="{{ opt }}" style="accent-color:var(--accent);flex-shrink:0;"/>
+        <span style="font-size:14px;color:var(--text2);">{{ opt.strip() }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary w-full btn-lg" id="submitBtn">
+      <i class="fas fa-paper-plane"></i> Submit Answers
+    </button>
+  </form>
+</div>
+
+{% block scripts %}
+<script>
+const APP_ID = "{{ request.args.get('app_id','') }}";
+const TEST_TYPE = "aptitude";
+let violations = 0, camStream = null, snapInterval = null, autoSubmitted = false;
+
+function autoSubmitEmpty(){
+  if(autoSubmitted) return; autoSubmitted = true;
+  document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+  clearInterval(snapInterval);
+  if(camStream) camStream.getTracks().forEach(t => t.stop());
+  if(document.fullscreenElement) document.exitFullscreen();
+  document.getElementById("aptForm").submit();
+}
+
+async function initCamera(){
+  const startBtn = document.getElementById("startBtn");
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    document.getElementById("camError").style.display="block";
+    document.getElementById("camError").textContent="⚠️ Camera not supported. Starting without proctor.";
+    startBtn.disabled=false; startBtn.innerHTML='<i class="fas fa-play"></i> Start Test'; return;
+  }
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({video:{width:320,height:240},audio:false});
+    document.getElementById("camFeed").srcObject = camStream;
+    document.getElementById("camPreview").style.display = "block";
+    startBtn.disabled = false; startBtn.innerHTML='<i class="fas fa-play"></i> Start Test';
+  } catch(e){
+    document.getElementById("camError").style.display="block";
+    document.getElementById("camError").innerHTML='<i class="fas fa-exclamation-triangle"></i> Camera denied. You can still start the test.';
+    startBtn.disabled=false; startBtn.innerHTML='<i class="fas fa-play"></i> Start Test';
+  }
+}
+
+function takeSnapshot(reason){ if(!camStream) return; const v=document.getElementById("camFeed"),c=document.getElementById("snapCanvas"),ctx=c.getContext("2d"); ctx.drawImage(v,0,0,320,240); logViolation(reason, c.toDataURL("image/jpeg",0.5).split(",")[1]); }
+function logViolation(eventType, snapshot=null){ violations++; document.getElementById("vCount").textContent=violations; const t=document.getElementById("violationToast"); t.textContent="⚠️ "+eventType.replace(/_/g," "); t.style.display="block"; setTimeout(()=>t.style.display="none",2500); fetch("/log_violation",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({test_type:TEST_TYPE,event_type:eventType,snapshot_b64:snapshot})}); }
+
+async function startTest(){ try{ await document.documentElement.requestFullscreen(); }catch(_){} document.getElementById("procOverlay").style.display="none"; snapInterval=setInterval(()=>takeSnapshot("periodic_check"),30000); }
+
+document.addEventListener("fullscreenchange",()=>{ const ind=document.getElementById("fsIndicator"); if(!document.fullscreenElement){ind.innerHTML='<i class="fas fa-exclamation-triangle"></i> Not Fullscreen'; ind.style.color="var(--danger)"; takeSnapshot("fullscreen_exit"); }else{ind.innerHTML='<i class="fas fa-desktop"></i> Fullscreen'; ind.style.color="var(--accent3)"; } });
+document.addEventListener("visibilitychange",()=>{ if(document.hidden){ takeSnapshot("tab_switch"); autoSubmitEmpty(); } });
+["copy","cut","paste"].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();logViolation("copy_paste_attempt");}));
+document.addEventListener("keydown",e=>{ if([e.ctrlKey&&["c","v","x","a","u","s","p"].includes(e.key.toLowerCase()),e.altKey&&e.key==="Tab",e.key==="F12",e.key==="PrintScreen",e.metaKey].some(Boolean)){e.preventDefault();logViolation("restricted_key_"+e.key);autoSubmitEmpty();} });
+document.addEventListener("contextmenu",e=>{e.preventDefault();logViolation("right_click");});
+
+document.getElementById("aptForm").addEventListener("submit",function(){ clearInterval(snapInterval); if(camStream)camStream.getTracks().forEach(t=>t.stop()); const btn=document.getElementById("submitBtn"); btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Submitting…'; btn.disabled=true; if(document.fullscreenElement)document.exitFullscreen(); });
+window.addEventListener("load", initCamera);
+</script>
+{% endblock %}
+{% endblock %}
