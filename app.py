@@ -32,6 +32,7 @@ RESUME_FOLDER = "resumes"
 #  - Caches results in-memory for 24 hours per level
 #  - HR custom questions from MySQL always override defaults
 #  - Hardcoded fallback guarantees questions always show
+
 # ═══════════════════════════════════════════════════════════════
 import re as _re
 _ai_question_cache = {}   # key: "tech_mcq:easy" → {"questions": [...], "ts": time()}
@@ -447,7 +448,7 @@ def auto_close_expired_jobs():
         JOIN users u ON u.id = j.hr_id
         WHERE j.status='open'
           AND j.deadline IS NOT NULL
-                    AND j.deadline <= CURDATE()
+                    AND j.deadline <= CURRENT_DATE
         ORDER BY j.deadline ASC, j.created_at ASC
         """
     )
