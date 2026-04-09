@@ -320,7 +320,7 @@ def send_email(to, subject, body):
     msg["Subject"] = subject
     msg["From"]    = SMTP_EMAIL
     msg["To"]      = to
-    s = smtplib.SMTP("smtp.gmail.com", 587)
+    s = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
     s.ehlo()
     s.starttls()
     s.ehlo()
