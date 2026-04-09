@@ -1,26 +1,19 @@
 """
-db.py  –  MySQL connection helper using PyMySQL
-Install: pip install pymysql cryptography
+db.py – PostgreSQL connection helper (Render)
+Install: pip install psycopg2-binary
 """
 
-import pymysql
-import pymysql.cursors
+import psycopg2
+import psycopg2.extras
 import os
-
-DB_CONFIG = {
-    "host":     os.getenv("DB_HOST",     "localhost"),
-    "user":     os.getenv("DB_USER",     "root"),
-    "password": os.getenv("DB_PASSWORD", "Samarth@1009"),        # ← set your MySQL password
-    "database": os.getenv("DB_NAME",     "ai_recruitment"),
-    "charset":  "utf8mb4",
-    "cursorclass": pymysql.cursors.DictCursor,
-    "autocommit": True,
-}
 
 
 def get_conn():
-    """Return a fresh PyMySQL connection (DictCursor)."""
-    return pymysql.connect(**DB_CONFIG)
+    """Return PostgreSQL connection (DictCursor)."""
+    return psycopg2.connect(
+        os.getenv("DATABASE_URL"),
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
 
 
 # ─── Generic helpers ────────────────────────────────────────
@@ -52,7 +45,7 @@ def execute(sql, params=None):
         with conn.cursor() as cur:
             cur.execute(sql, params or ())
             conn.commit()
-            return cur.lastrowid
+            return cur.rowcount
     finally:
         conn.close()
 
